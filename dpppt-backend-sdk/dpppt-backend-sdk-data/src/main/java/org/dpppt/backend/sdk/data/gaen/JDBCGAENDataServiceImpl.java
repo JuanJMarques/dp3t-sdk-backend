@@ -57,6 +57,7 @@ public class JDBCGAENDataServiceImpl implements GAENDataService {
 		}
 		var parameterList = new ArrayList<MapSqlParameterSource>();
 		var nowMillis = System.currentTimeMillis();
+		// Calculate the `receivedAt` just at the end of the current releaseBucket.
 		var receivedAt = (nowMillis/releaseBucketDuration.toMillis() + 1) * releaseBucketDuration.toMillis() - 1;
 		for (var gaenKey : gaenKeys) {
 			MapSqlParameterSource params = new MapSqlParameterSource();
