@@ -18,7 +18,7 @@ import ch.ubique.openapi.docannotations.Documentation;
 public class GaenV2Controller {
 
 	/// POST für Keyupload
-	@PostMapping(path = "/exposed")
+	@PostMapping(value = "/exposed")
 	@Documentation(description = "Endpoint used to upload exposure keys to the backend specifying for which countries the keys are valid.")
 	public @ResponseBody ResponseEntity<String> addExposed(
 			@Documentation(description = "JSON Object containing all keys and a list of countries specifying for which countries the keys are valid") @RequestBody GaenV2Request gaenV2Request) {
@@ -27,7 +27,7 @@ public class GaenV2Controller {
 	}
 
 	/// GET fuer Key Download
-	@GetMapping(path = "/exposed/{country}/{since}")
+	@GetMapping(value = "/exposed/{country}/{since}")
 	@Documentation(description = "Requests the exposed keys published _since_ originating from _country_", responses = {
 			"200 => zipped export.bin and export.sig of all keys in that interval",
 			"404 => Invalid _country_ or invalid _since_ (too far in the past/future, not at bucket boundaries)" })
