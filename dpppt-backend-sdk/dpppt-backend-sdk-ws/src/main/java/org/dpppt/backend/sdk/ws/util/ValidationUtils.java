@@ -74,7 +74,7 @@ public class ValidationUtils {
 	 * @return if the date is in the range
 	 */
 	public boolean isBeforeRetention(UTCInstant timestamp, UTCInstant now){
-		return timestamp.isBeforeDate(now.minus(retentionPeriod));
+		return timestamp.isBeforeDateOf(now.minus(retentionPeriod));
 	}
 
 	/**
@@ -103,8 +103,8 @@ public class ValidationUtils {
 	}
 
 	public void validateDelayedKeyDate(UTCInstant now, UTCInstant delayedKeyDate) throws DelayedKeyDateIsInvalid{
-		if (delayedKeyDate.isBeforeDate(now.getLocalDate().minusDays(1)) 
-		||  delayedKeyDate.isAfterDate(now.getLocalDate().plusDays(1))) {
+		if (delayedKeyDate.isBeforeDateOf(now.getLocalDate().minusDays(1)) 
+		||  delayedKeyDate.isAfterDateOf(now.getLocalDate().plusDays(1))) {
 			throw new DelayedKeyDateIsInvalid();
 		}
 	}
