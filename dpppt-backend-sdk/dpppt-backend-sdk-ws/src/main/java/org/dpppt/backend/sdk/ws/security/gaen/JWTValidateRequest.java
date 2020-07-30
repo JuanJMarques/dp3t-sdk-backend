@@ -23,26 +23,28 @@ public class JWTValidateRequest implements ValidateRequest {
 		this.validationUtils = validationUtils;
 	}
 	@Override
-	public boolean isValid(Object authObject) {
+	public boolean isValid(Object authObject) throws WrongScopeException {
 		if (authObject instanceof Jwt) {
 			Jwt token = (Jwt) authObject;
-			return token.containsClaim("scope") && token.getClaim("scope").equals("exposed");
+			if(token.containsClaim("scope") && token.getClaim("scope").equals("exposed")) {
+				return true;
+			}
+			throw new WrongScopeException();
 		}
 		return false;
 	}
 
 	@Override
-	public long getKeyDate(UTCInstant now, Object authObject, Object others) throws InvalidDateException {
+	public long validateKeyDate(UTCInstant now, Object authObject, Object others) throws ClaimIsBeforeOnsetException {
 		if (authObject instanceof Jwt) {
 			Jwt token = (Jwt) authObject;
 			var jwtKeyDate = UTCInstant.parseDate(token.getClaim("onset"));
 			if (others instanceof GaenKey) {
                 GaenKey request = (GaenKey) others;
                 var keyDate = UTCInstant.of(request.getRollingStartNumber(), GaenUnit.TenMinutes);
-				if (!validationUtils.isDateInRange(keyDate,now)
-				 ||	keyDate.isBeforeEpochMillisOf(jwtKeyDate)) {
-					throw new InvalidDateException();
-				}
+				if (keyDate.isBeforeEpochMillisOf(jwtKeyDate)) {
+					throw new ClaimIsBeforeOnsetException();
+				} 
 				jwtKeyDate = keyDate;
 			}
 			return jwtKeyDate.getTimestamp();
