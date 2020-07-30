@@ -26,14 +26,6 @@ public interface GAENDataService {
 	void upsertExposees(List<GaenKey> keys, UTCInstant now);
 
 	/**
-	 * Upserts (Update or Inserts) the given list of exposed keys, with delayed release of same day TEKs
-	 * 
-	 * @param keys the list of exposed keys to upsert
-	 * @param delayedReceivedAt the timestamp to use for the delayed release (if null use now rounded to next bucket)
-	 */
-	void upsertExposeesDelayed(List<GaenKey> keys, UTCInstant delayedReceivedAt, UTCInstant now);
-
-	/**
 	 * Returns the maximum id of the stored exposed entries for the given batch.
 	 * 
 	 * @param keyDate in milliseconds since Unix epoch (1970-01-01)
@@ -41,7 +33,7 @@ public interface GAENDataService {
 	 * @param publishedUntil in milliseconds since Unix epoch
 	 * @return the maximum id of the stored exposed entries for the given batch
 	 */
-	int getMaxExposedIdForKeyDate(Long keyDate, Long publishedAfter, Long publishedUntil);
+	int getMaxExposedIdForKeyDate(UTCInstant keyDate, UTCInstant publishedAfter, UTCInstant publishedUntil, UTCInstant now);
 
 	/**
 	 * Returns all exposeed keys for the given batch.
@@ -51,7 +43,27 @@ public interface GAENDataService {
 	 * @param publishedUntil in milliseconds since Unix epoch
 	 * @return all exposeed keys for the given batch
 	 */
-	List<GaenKey> getSortedExposedForKeyDate(Long keyDate, Long publishedAfter, Long publishedUntil);
+	List<GaenKey> getSortedExposedForKeyDate(UTCInstant keyDate, UTCInstant publishedAfter, UTCInstant publishedUntil, UTCInstant now);
+
+		/**
+	 * Returns the maximum id of the stored exposed entries for the given batch.
+	 * 
+	 * @param keyDate in milliseconds since Unix epoch (1970-01-01)
+	 * @param publishedAfter in milliseconds since Unix epoch
+	 * @param publishedUntil in milliseconds since Unix epoch
+	 * @return the maximum id of the stored exposed entries for the given batch
+	 */
+	int getMaxExposedIdForKeyDateDEBUG(UTCInstant keyDate, UTCInstant publishedAfter, UTCInstant publishedUntil, UTCInstant now);
+
+	/**
+	 * Returns all exposeed keys for the given batch.
+	 *
+	 * @param keyDate in milliseconds since Unix epoch (1970-01-01)
+	 * @param publishedAfter in milliseconds since Unix epoch
+	 * @param publishedUntil in milliseconds since Unix epoch
+	 * @return all exposeed keys for the given batch
+	 */
+	List<GaenKey> getSortedExposedForKeyDateDEBUG(UTCInstant keyDate, UTCInstant publishedAfter, UTCInstant publishedUntil, UTCInstant now);
 
 	/**
 	 * deletes entries older than retentionperiod

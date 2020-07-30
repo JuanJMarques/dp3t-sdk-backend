@@ -87,11 +87,10 @@ public class GaenController {
 	private final PrivateKey secondDayKey;
 	private final ProtoSignature gaenSigner;
 
-	private final boolean delayTodaysKeys;
 
 	public GaenController(GAENDataService dataService, FakeKeyService fakeKeyService, ValidateRequest validateRequest,
 						  ProtoSignature gaenSigner, ValidationUtils validationUtils, Duration releaseBucketDuration, Duration requestTime,
-						  Duration exposedListCacheControl, PrivateKey secondDayKey, boolean delayTodaysKeys) {
+						  Duration exposedListCacheControl, PrivateKey secondDayKey) {
 		this.dataService = dataService;
 		this.fakeKeyService = fakeKeyService;
 		this.releaseBucketDuration = releaseBucketDuration;
@@ -101,7 +100,6 @@ public class GaenController {
 		this.exposedListCacheControl = exposedListCacheControl;
 		this.secondDayKey = secondDayKey;
 		this.gaenSigner = gaenSigner;
-		this.delayTodaysKeys = delayTodaysKeys;
 	}
 
 	@PostMapping(value = "/exposed")
@@ -131,7 +129,6 @@ public class GaenController {
 		}
 
 		List<GaenKey> nonFakeKeys = new ArrayList<>();
-		List<GaenKey> nonFakeKeysDelayed = new ArrayList<>();
 		for (var key : gaenRequest.getGaenKeys()) {
 			if (!validationUtils.isValidBase64Key(key.getKeyData())) {
 				return () -> new ResponseEntity<>("No valid base64 key", HttpStatus.BAD_REQUEST);
@@ -147,21 +144,8 @@ public class GaenController {
 				key.setRollingPeriod(GaenKey.GaenKeyDefaultRollingPeriod);
 			}
 			
-			if(delayTodaysKeys) {
-				// Additionally to delaying keys this feature also make sure rolling period is always set to 144 
-				// to make sure iOS 13.5.x does not ignore the TEK.
-				key.setRollingPeriod(GaenKey.GaenKeyDefaultRollingPeriod);
-				var rollingUTCInstant = UTCInstant.of(key.getRollingStartNumber(), GaenUnit.TenMinutes);
-				
-				// If this is a same day TEK we are delaying its release
-				if(now.hasSameDateAs(rollingUTCInstant)) {
-					nonFakeKeysDelayed.add(key);
-				} else {
-					nonFakeKeys.add(key);
-				}
-			} else {
-				nonFakeKeys.add(key);
-			}
+			
+			nonFakeKeys.add(key);
 		}
 
 		if (principal instanceof Jwt && ((Jwt) principal).containsClaim("fake")
@@ -170,13 +154,6 @@ public class GaenController {
 		}
 		if (!nonFakeKeys.isEmpty()) {
 			dataService.upsertExposees(nonFakeKeys, now);
-		}
-		if (!nonFakeKeysDelayed.isEmpty()) {
-			// Hold back same day TEKs until 02:00 UTC of the next day (as RPIs are accepted by EN up to 2h after rolling period)
-			var tomorrowAt2AM = now.atStartOfDay()
-										.plusDays(1)
-										.plusHours(2);
-			dataService.upsertExposeesDelayed(nonFakeKeysDelayed, tomorrowAt2AM, now);
 		}
 
 		var delayedKeyDateUTCInstant = UTCInstant.of(gaenRequest.getDelayedKeyDate(), GaenUnit.TenMinutes);
@@ -284,29 +261,31 @@ public class GaenController {
 					Long publishedafter)
 			throws BadBatchReleaseTimeException, IOException, InvalidKeyException, SignatureException,
 			NoSuchAlgorithmException {
-		var utcNow = UTCInstant.now();
+		var now = UTCInstant.now();
+		var publishedAfterInstant = UTCInstant.ofEpochMillis(publishedafter);
+		var keyDateInstant = UTCInstant.ofEpochMillis(keyDate);
+
 		if (!validationUtils.isValidKeyDate(UTCInstant.ofEpochMillis(keyDate))) {
 			return ResponseEntity.notFound().build();
 		}
-		if (publishedafter != null && !validationUtils.isValidBatchReleaseTime(UTCInstant.ofEpochMillis(publishedafter), utcNow)) {
+		if (publishedafter != null && !validationUtils.isValidBatchReleaseTime(publishedAfterInstant, now)) {
 			return ResponseEntity.notFound().build();
 		}
 		
-		long now = utcNow.getTimestamp();
 		// calculate exposed until bucket
-		long publishedUntil = now - (now % releaseBucketDuration.toMillis());
+		UTCInstant publishedUntil = now.roundToPreviousBucket(releaseBucketDuration);
 
-		var exposedKeys = dataService.getSortedExposedForKeyDate(keyDate, publishedafter, publishedUntil);
-		exposedKeys = fakeKeyService.fillUpKeys(exposedKeys, publishedafter, keyDate);
+		var exposedKeys = dataService.getSortedExposedForKeyDate(keyDateInstant, publishedAfterInstant, publishedUntil, now);
+		exposedKeys = fakeKeyService.fillUpKeys(exposedKeys, publishedAfterInstant, keyDateInstant, now);
 		if (exposedKeys.isEmpty()) {
 			return ResponseEntity.noContent().cacheControl(CacheControl.maxAge(exposedListCacheControl))
-					.header("X-PUBLISHED-UNTIL", Long.toString(publishedUntil)).build();
+					.header("X-PUBLISHED-UNTIL", Long.toString(publishedUntil.getTimestamp())).build();
 		}
 
 		ProtoSignatureWrapper payload = gaenSigner.getPayload(exposedKeys);
 		
 		return ResponseEntity.ok().cacheControl(CacheControl.maxAge(exposedListCacheControl))
-				.header("X-PUBLISHED-UNTIL", Long.toString(publishedUntil)).body(payload.getZip());
+				.header("X-PUBLISHED-UNTIL", Long.toString(publishedUntil.getTimestamp())).body(payload.getZip());
 	}
 
 	@GetMapping(value = "/buckets/{dayDateStr}")

@@ -33,11 +33,11 @@ public class UTCInstant {
         return new UTCInstant(LocalDateTime.now(currentClock).toInstant(ZoneOffset.UTC)).atStartOfDay();
     }
     public static UTCInstant midnight1970(){
-        return new UTCInstant(0);
+        return new UTCInstant(0L);
     }
 
-    public UTCInstant(long timestamp) {
-        this.timestamp = timestamp;
+    public UTCInstant(Long timestamp) {
+        this.timestamp = timestamp == null? 0 : timestamp;
     }
     public UTCInstant(Duration duration) {
         this.timestamp = duration.toMillis();
@@ -63,6 +63,9 @@ public class UTCInstant {
     }
     public static UTCInstant of(long amount, TemporalUnit unit) {
         return new UTCInstant(amount, unit);
+    }
+    public static UTCInstant ofEpochMillis(Long epochMillis){
+        return new UTCInstant(epochMillis);
     }
     public static UTCInstant ofEpochMillis(long epochMillis){
         return new UTCInstant(epochMillis);
@@ -103,6 +106,15 @@ public class UTCInstant {
     }
     public LocalTime getLocalTime() {
         return getLocalDateTime().toLocalTime();
+    }
+
+    public UTCInstant roundToPreviousBucket(Duration releaseBucketDuration) {
+        var roundedTimestamp = (long)Math.floor(this.timestamp/releaseBucketDuration.toMillis()) * releaseBucketDuration.toMillis();
+        return new UTCInstant(roundedTimestamp);
+    }
+    public UTCInstant roundToNextBucket(Duration releaseBucketDuration) {
+        var roundedTimestamp = ((long)Math.floor(this.timestamp/releaseBucketDuration.toMillis()) +1)* releaseBucketDuration.toMillis();
+        return new UTCInstant(roundedTimestamp);
     }
 
     public UTCInstant plus(Duration duration){

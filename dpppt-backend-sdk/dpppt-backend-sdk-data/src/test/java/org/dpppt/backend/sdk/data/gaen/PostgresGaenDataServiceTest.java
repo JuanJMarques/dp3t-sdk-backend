@@ -13,6 +13,7 @@ package org.dpppt.backend.sdk.data.gaen;
 import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.validateMockitoUsage;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -79,27 +80,28 @@ public class PostgresGaenDataServiceTest {
 	@Test
 	public void testFakeKeyContainsKeysForLast21Days() {
 		var today = UTCInstant.today();
+		var now = UTCInstant.now();
 		var noKeyAtThisDate = today.minusDays(22);
 		var keysUntilToday = today.minusDays(21);
 
 		var keys = new ArrayList<GaenKey>();
 		var emptyList = fakeKeyService.fillUpKeys(keys, null,
-				noKeyAtThisDate.getTimestamp());
+				noKeyAtThisDate, now);
 		assertEquals(0, emptyList.size());
 		do {
 			keys.clear();
 			var list = fakeKeyService.fillUpKeys(keys, null,
-					keysUntilToday.getTimestamp());
+					keysUntilToday, now);
 
 			assertEquals(10, list.size());
-			list = fakeKeyService.fillUpKeys(keys, UTCInstant.now().plusHours(3).getTimestamp(), keysUntilToday.getTimestamp());
+			list = fakeKeyService.fillUpKeys(keys, UTCInstant.now().plusHours(3), keysUntilToday, now);
 			assertEquals(10, list.size());
 			keysUntilToday = keysUntilToday.plusDays(1);
 		} while (keysUntilToday.isBeforeDateOf(today));
 
 		keys.clear();
 		emptyList = fakeKeyService.fillUpKeys(keys, null,
-				noKeyAtThisDate.getTimestamp());
+				noKeyAtThisDate, now);
 		assertEquals(0, emptyList.size());
 	}
 
@@ -151,13 +153,13 @@ public class PostgresGaenDataServiceTest {
 		insertExposeeWithReceivedAtAndKeyDate(receivedAt.getInstant(), receivedAt.minusDays(1).getInstant(), key);
 
 		List<GaenKey> sortedExposedForDay = gaenDataService.getSortedExposedForKeyDate(
-				receivedAt.minusDays(1).getInstant().toEpochMilli(), null, now.getInstant().toEpochMilli());
+				receivedAt.minusDays(1), null, now, now);
 
 		assertFalse(sortedExposedForDay.isEmpty());
 
 		gaenDataService.cleanDB(Duration.ofDays(21));
 		sortedExposedForDay = gaenDataService.getSortedExposedForKeyDate(
-				receivedAt.minusDays(1).getInstant().toEpochMilli(), null, now.getInstant().toEpochMilli());
+				receivedAt.minusDays(1), null, now, now);
 
 		assertTrue(sortedExposedForDay.isEmpty());
 
@@ -175,14 +177,14 @@ public class PostgresGaenDataServiceTest {
 
 		gaenDataService.upsertExposees(keys, UTCInstant.now());
 
-		long now = System.currentTimeMillis();
+		var now = UTCInstant.now();
 		// calculate exposed until bucket, but get bucket in the future, as keys have
 		// been inserted with timestamp now.
-		long publishedUntil = now - (now % BATCH_LENGTH.toMillis()) + BATCH_LENGTH.toMillis();
+		UTCInstant publishedUntil = now.roundToNextBucket(BATCH_LENGTH);
 
 		var returnedKeys = gaenDataService.getSortedExposedForKeyDate(
-				UTCInstant.today().minus(Duration.ofDays(1)).getTimestamp(), null,
-				publishedUntil);
+				UTCInstant.today().minus(Duration.ofDays(1)), null,
+				publishedUntil, now);
 
 		assertEquals(keys.size(), returnedKeys.size());
 		assertEquals(keys.get(0).getKeyData(), returnedKeys.get(0).getKeyData());
@@ -191,24 +193,25 @@ public class PostgresGaenDataServiceTest {
 	@Test
 	public void testBatchReleaseTime() throws SQLException {
 		var receivedAt = UTCInstant.parseDateTime("2014-01-28T00:00:00"); 
+		var now = UTCInstant.now();
 		String key = "key555";
 		insertExposeeWithReceivedAtAndKeyDate(receivedAt.getInstant(), receivedAt.minus(Duration.ofDays(2)).getInstant(), key);
 
 		var batchTime = UTCInstant.parseDateTime("2014-01-28T02:00:00");
 
 		var returnedKeys = gaenDataService
-				.getSortedExposedForKeyDate(receivedAt.minus(Duration.ofDays(2)).getTimestamp(), null, batchTime.getTimestamp());
+				.getSortedExposedForKeyDate(receivedAt.minus(Duration.ofDays(2)), null, batchTime, now);
 
 		assertEquals(1, returnedKeys.size());
 		GaenKey actual = returnedKeys.get(0);
 		assertEquals(actual.getKeyData(), key);
 
 		int maxExposedIdForBatchReleaseTime = gaenDataService
-				.getMaxExposedIdForKeyDate(receivedAt.minus(Duration.ofDays(2)).getTimestamp(), null, batchTime.getTimestamp());
+				.getMaxExposedIdForKeyDate(receivedAt.minus(Duration.ofDays(2)), null, batchTime, now);
 		assertEquals(100, maxExposedIdForBatchReleaseTime);
 
-		returnedKeys = gaenDataService.getSortedExposedForKeyDate(receivedAt.minus(Duration.ofDays(2)).getTimestamp(),
-				batchTime.getTimestamp(), batchTime.plusHours(2).getTimestamp());
+		returnedKeys = gaenDataService.getSortedExposedForKeyDate(receivedAt.minus(Duration.ofDays(2)),
+				batchTime, batchTime.plusHours(2), now);
 		assertEquals(0, returnedKeys.size());
 	}
 
