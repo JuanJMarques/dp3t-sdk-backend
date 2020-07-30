@@ -439,7 +439,7 @@ components:
           type: integer
           description: The ENIntervalNumber as number of 10-minute intervals since
             the Unix epoch (1970-01-01)
-          example: 2659680s
+          example: '2659680'
         rollingPeriod:
           type: integer
           description: The TEKRollingPeriod indicates for how many 10-minute intervals
