@@ -14,7 +14,7 @@ public class GaenV2Request {
     @NotEmpty
     @Valid
     @Documentation(description = "A list of iso-3166-1 alpha-2 country codes", example = "[\"CH\", \"DE\"]")
-    List<String> countryCodes;
+    List<@Size(max=2, min=2) String> countryCodes;
 
     @NotNull
     @NotEmpty

@@ -286,7 +286,7 @@ public abstract class WSBaseConfig implements SchedulingConfigurer, WebMvcConfig
 			redeemDataService().cleanDB(Duration.ofDays(2));
 			logger.info("DB cleanup up");
 		}, 60 * 60 * 1000L));
-
+		
 		var trigger = new CronTrigger("0 0 2 * * *", TimeZone.getTimeZone(ZoneOffset.UTC));
 		taskRegistrar.addCronTask(new CronTask(() -> fakeKeyService().updateFakeKeys(), trigger));
 	}
