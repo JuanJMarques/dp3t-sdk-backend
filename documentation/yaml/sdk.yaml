@@ -287,11 +287,16 @@ paths:
         for which countries the keys are valid.
       responses:
         '200':
-          description: ''
+          description: The exposed keys have been stored in the database
           content:
             application/json:
               schema:
                 type: string
+        '400':
+          description: '- Invalid base64 encoding in GaenRequest- negative rolling
+            period- fake claim with non-fake keys'
+        '403':
+          description: Authentication failed
       requestBody:
         required: true
         content:
