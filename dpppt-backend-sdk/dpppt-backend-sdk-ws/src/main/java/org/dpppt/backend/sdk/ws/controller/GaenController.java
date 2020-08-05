@@ -133,7 +133,7 @@ public class GaenController {
 			}
 			if (this.validateRequest.isFakeRequest(principal, key) 
 				|| hasNegativeRollingPeriod(key)
-				|| hasInvalidKeyDate(now, principal, key)) {
+				|| hasInvalidKeyDate(start, principal, key)) {
 				continue;
 			}
 
@@ -154,20 +154,20 @@ public class GaenController {
 			return () -> ResponseEntity.badRequest().body("Claim is fake but list contains non fake keys");
 		}
 		if (!nonFakeKeys.isEmpty()) {
-			dataService.upsertExposees(nonFakeKeys, now);
+			dataService.upsertExposees(nonFakeKeys, start);
 		}
 
 		var delayedKeyDateUTCInstant = UTCInstant.of(gaenRequest.getDelayedKeyDate(), GaenUnit.TenMinutes);
-		if (delayedKeyDateUTCInstant.isBeforeDateOf(now.getLocalDate().minusDays(1)) || delayedKeyDateUTCInstant.isAfterDateOf(now.getLocalDate().plusDays(1))) {
+		if (delayedKeyDateUTCInstant.isBeforeDateOf(start.getLocalDate().minusDays(1)) || delayedKeyDateUTCInstant.isAfterDateOf(start.getLocalDate().plusDays(1))) {
 			return () -> ResponseEntity.badRequest().body("delayedKeyDate date must be between yesterday and tomorrow");
 		}
 
 		var responseBuilder = ResponseEntity.ok();
 		if (principal instanceof Jwt) {
 			var originalJWT = (Jwt) principal;
-			var jwtBuilder = Jwts.builder().setId(UUID.randomUUID().toString()).setIssuedAt(now.getDate())
+			var jwtBuilder = Jwts.builder().setId(UUID.randomUUID().toString()).setIssuedAt(start.getDate())
 					.setIssuer("dpppt-sdk-backend").setSubject(originalJWT.getSubject())
-					.setExpiration(now.plusDays(2).getDate())
+					.setExpiration(start.plusDays(2).getDate())
 					.claim("scope", "currentDayExposed").claim("delayedKeyDate", gaenRequest.getDelayedKeyDate());
 			if (originalJWT.containsClaim("fake")) {
 				jwtBuilder.claim("fake", originalJWT.getClaim("fake"));
@@ -232,7 +232,7 @@ public class GaenController {
 			}
 			List<GaenKey> keys = new ArrayList<>();
 			keys.add(gaenSecondDay.getDelayedKey());
-			dataService.upsertExposees(keys, now);
+			dataService.upsertExposees(keys, start);
 		}
 
 		return () -> {
