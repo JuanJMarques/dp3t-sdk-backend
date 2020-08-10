@@ -15,18 +15,16 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.time.Duration;
-import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 
 import javax.validation.Valid;
 
-import ch.ubique.openapi.docannotations.Documentation;
 import com.fasterxml.jackson.core.JsonProcessingException;
+
 import org.dpppt.backend.sdk.data.gaen.FakeKeyService;
 import org.dpppt.backend.sdk.data.gaen.GAENDataService;
 import org.dpppt.backend.sdk.model.gaen.DayBuckets;
@@ -34,6 +32,8 @@ import org.dpppt.backend.sdk.model.gaen.GaenKey;
 import org.dpppt.backend.sdk.model.gaen.GaenRequest;
 import org.dpppt.backend.sdk.model.gaen.GaenSecondDay;
 import org.dpppt.backend.sdk.model.gaen.GaenUnit;
+import org.dpppt.backend.sdk.utils.UTCInstant;
+import org.dpppt.backend.sdk.ws.insertmanager.InsertException;
 import org.dpppt.backend.sdk.ws.insertmanager.InsertManager;
 import org.dpppt.backend.sdk.ws.insertmanager.insertionfilters.NoBase64Filter.KeyIsNotBase64Exception;
 import org.dpppt.backend.sdk.ws.security.ValidateRequest;
@@ -42,7 +42,6 @@ import org.dpppt.backend.sdk.ws.security.ValidateRequest.InvalidDateException;
 import org.dpppt.backend.sdk.ws.security.ValidateRequest.WrongScopeException;
 import org.dpppt.backend.sdk.ws.security.signature.ProtoSignature;
 import org.dpppt.backend.sdk.ws.security.signature.ProtoSignature.ProtoSignatureWrapper;
-import org.dpppt.backend.sdk.utils.UTCInstant;
 import org.dpppt.backend.sdk.ws.util.ValidationUtils;
 import org.dpppt.backend.sdk.ws.util.ValidationUtils.BadBatchReleaseTimeException;
 import org.dpppt.backend.sdk.ws.util.ValidationUtils.DelayedKeyDateClaimIsWrong;
@@ -67,6 +66,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
+import ch.ubique.openapi.docannotations.Documentation;
 import io.jsonwebtoken.Jwts;
 
 @Controller
@@ -127,7 +127,7 @@ public class GaenController {
 			@AuthenticationPrincipal
             @Documentation(description = "JWT token that can be verified by the backend server")
 					Object principal)
-					throws ClaimIsBeforeOnsetException, WrongScopeException, KeyIsNotBase64Exception, DelayedKeyDateIsInvalid {
+					throws WrongScopeException, KeyIsNotBase64Exception, DelayedKeyDateIsInvalid {
 		var now = UTCInstant.now();
 
 		this.validateRequest.isValid(principal);
@@ -140,10 +140,9 @@ public class GaenController {
 		var responseBuilder = ResponseEntity.ok();
 		if (principal instanceof Jwt) {
 			var originalJWT = (Jwt) principal;
-			var jwtBuilder = Jwts.builder().setId(UUID.randomUUID().toString()).setIssuedAt(Date.from(Instant.now()))
+			var jwtBuilder = Jwts.builder().setId(UUID.randomUUID().toString()).setIssuedAt(now.getDate())
 					.setIssuer("dpppt-sdk-backend").setSubject(originalJWT.getSubject())
-					.setExpiration(Date
-							.from(now.atStartOfDay().plusDays(2).getInstant()))
+					.setExpiration(now.plusDays(2).getDate())
 					.claim("scope", "currentDayExposed").claim("delayedKeyDate", gaenRequest.getDelayedKeyDate());
 			if (originalJWT.containsClaim("fake")) {
 				jwtBuilder.claim("fake", originalJWT.getClaim("fake"));
@@ -278,17 +277,20 @@ public class GaenController {
 			logger.error("Couldn't equalize request time: {}", ex.toString());
 		}
 	}
-	private void insertIntoDatabaseIfJWTIsNotFake(GaenKey key, String userAgent, Object principal, UTCInstant utcNow) throws KeyIsNotBase64Exception {
+	private void insertIntoDatabaseIfJWTIsNotFake(GaenKey key, String userAgent, Object principal, UTCInstant now) throws KeyIsNotBase64Exception {
 		List<GaenKey> keys = new ArrayList<>();
 		keys.add(key);
-		insertIntoDatabaseIfJWTIsNotFake(keys, userAgent, principal, utcNow);
+		insertIntoDatabaseIfJWTIsNotFake(keys, userAgent, principal, now);
 	}
-	private void insertIntoDatabaseIfJWTIsNotFake(List<GaenKey> keys, String userAgent, Object principal, UTCInstant utcNow) throws KeyIsNotBase64Exception {
+	private void insertIntoDatabaseIfJWTIsNotFake(List<GaenKey> keys, String userAgent, Object principal, UTCInstant now) throws KeyIsNotBase64Exception {
 		try {
-			insertManager.insertIntoDatabase(keys, userAgent, principal, utcNow);
+			insertManager.insertIntoDatabase(keys, userAgent, principal, now);
 		}
-		catch(Throwable ex) {
-			if(ex instanceof KeyIsNotBase64Exception) throw (KeyIsNotBase64Exception)ex;
+		catch(KeyIsNotBase64Exception ex) {
+			throw ex;
+		}
+		catch(InsertException ex){
+			logger.info("Unknown exception thrown: ", ex);
 		}
 	}
 

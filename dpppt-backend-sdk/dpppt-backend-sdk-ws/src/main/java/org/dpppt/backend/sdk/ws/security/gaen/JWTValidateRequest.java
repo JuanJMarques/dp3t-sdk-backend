@@ -12,21 +12,20 @@ package org.dpppt.backend.sdk.ws.security.gaen;
 
 import org.dpppt.backend.sdk.model.gaen.GaenKey;
 import org.dpppt.backend.sdk.model.gaen.GaenUnit;
+import org.dpppt.backend.sdk.utils.UTCInstant;
 import org.dpppt.backend.sdk.ws.security.ValidateRequest;
 import org.dpppt.backend.sdk.ws.util.ValidationUtils;
-import org.dpppt.backend.sdk.utils.UTCInstant;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 public class JWTValidateRequest implements ValidateRequest {
-	private final ValidationUtils validationUtils;
-	public JWTValidateRequest(ValidationUtils validationUtils) {
-		this.validationUtils = validationUtils;
-	}
+	
+	public JWTValidateRequest(ValidationUtils validationUtils) {}
+
 	@Override
 	public boolean isValid(Object authObject) throws WrongScopeException {
 		if (authObject instanceof Jwt) {
 			Jwt token = (Jwt) authObject;
-			if(token.containsClaim("scope") && token.getClaim("scope").equals("exposed")) {
+			if(Boolean.TRUE.equals(token.containsClaim("scope")) && token.getClaim("scope").equals("exposed")) {
 				return true;
 			}
 			throw new WrongScopeException();
@@ -58,7 +57,7 @@ public class JWTValidateRequest implements ValidateRequest {
 			Jwt token = (Jwt) authObject;
 			GaenKey request = (GaenKey) others;
 			boolean fake = false;
-			if (token.containsClaim("fake") && token.getClaimAsString("fake").equals("1")) {
+			if (Boolean.TRUE.equals(token.containsClaim("fake")) && token.getClaimAsString("fake").equals("1")) {
 				fake = true;
 			}
 			if (request.getFake() == 1) {

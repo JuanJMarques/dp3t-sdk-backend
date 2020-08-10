@@ -12,15 +12,16 @@ import java.time.temporal.TemporalUnit;
 import java.util.Date;
 
 import org.dpppt.backend.sdk.model.gaen.GaenUnit;
+
 /**
- * This class collects all usages of time within the project. Any `java.time.*` class should have its 
- * equivalent regarding UTC.
+ * This class collects all usages of time within the project. Any `java.time.*`
+ * class should have its equivalent regarding UTC.
  * 
  * All timestamps should be described as 'milliseconds since Unix epoch'.
  * 
  * 
- * IMPORTANT: `Local*` classes do not carry any timezone informations. As such, all comparisons are 
- *             made regarding 'UTC'
+ * IMPORTANT: `Local*` classes do not carry any timezone informations. As such,
+ * all comparisons are made regarding 'UTC'
  * 
  * 
  */
@@ -30,46 +31,55 @@ public class UTCInstant {
 	private static Clock currentClock = Clock.systemUTC();
 
 	public static UTCInstant today() {
-		return new UTCInstant(LocalDateTime.now(currentClock).toInstant(ZoneOffset.UTC)).atStartOfDay();
-	}
-	public static UTCInstant midnight1970(){
-		return new UTCInstant(0L);
+		return UTCInstant.now().atStartOfDay();
 	}
 
-	public UTCInstant(Long timestamp) {
-		this.timestamp = timestamp == null? 0 : timestamp;
+	public static UTCInstant midnight1970() {
+		return new UTCInstant(0);
 	}
-	public UTCInstant(Duration duration) {
-		this.timestamp = duration.toMillis();
+
+	public UTCInstant(long timestamp) {
+		this.timestamp = timestamp;
 	}
+
+	public UTCInstant(Duration duration, UTCInstant since) {
+		this.timestamp = since.timestamp + duration.toMillis();
+	}
+
 	public UTCInstant(Instant instant) {
 		this.timestamp = instant.toEpochMilli();
 	}
+
 	public UTCInstant(long units, TemporalUnit interval) {
 		this.timestamp = units * interval.getDuration().toMillis();
 	}
+
 	public UTCInstant(OffsetDateTime offsetDateTime) {
 		this.timestamp = offsetDateTime.toInstant().toEpochMilli();
 	}
+
+	//TODO: make protected and subclass for use in tests
 	public static void setClock(Clock clock) {
 		currentClock = clock;
 	}
+
 	public static void resetClock() {
 		currentClock = Clock.systemUTC();
 	}
+
 	public static UTCInstant now() {
 		var nowTimestamp = currentClock.millis();
 		return new UTCInstant(nowTimestamp);
 	}
+
 	public static UTCInstant of(long amount, TemporalUnit unit) {
 		return new UTCInstant(amount, unit);
 	}
-	public static UTCInstant ofEpochMillis(Long epochMillis){
+
+	public static UTCInstant ofEpochMillis(long epochMillis) {
 		return new UTCInstant(epochMillis);
 	}
-	public static UTCInstant ofEpochMillis(long epochMillis){
-		return new UTCInstant(epochMillis);
-	}
+
 	public static UTCInstant parseDate(String dateString) {
 		var timestamp = LocalDate.parse(dateString).atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli();
 		return new UTCInstant(timestamp);

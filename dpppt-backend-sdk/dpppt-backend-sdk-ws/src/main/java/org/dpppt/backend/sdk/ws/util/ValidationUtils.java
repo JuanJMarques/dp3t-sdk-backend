@@ -9,12 +9,12 @@
  */
 package org.dpppt.backend.sdk.ws.util;
 
+import java.time.Duration;
+import java.util.Base64;
+
 import org.dpppt.backend.sdk.model.gaen.GaenKey;
 import org.dpppt.backend.sdk.utils.UTCInstant;
 import org.springframework.security.oauth2.jwt.Jwt;
-
-import java.time.Duration;
-import java.util.Base64;
 
 /**
  * Offers a set of methods to validate the incoming requests from the mobile devices.
@@ -109,7 +109,7 @@ public class ValidationUtils {
 		}
 	}
 	public void checkForDelayedKeyDateClaim(Object principal, GaenKey delayedKey) throws DelayedKeyDateClaimIsWrong {
-		if (principal instanceof Jwt && !((Jwt) principal).containsClaim("delayedKeyDate")) {
+		if (principal instanceof Jwt && Boolean.FALSE.equals(((Jwt) principal).containsClaim("delayedKeyDate"))) {
 			throw new DelayedKeyDateClaimIsWrong();
 		}
 		if (principal instanceof Jwt) {
@@ -122,11 +122,9 @@ public class ValidationUtils {
 	}
 
 	public boolean jwtIsFake(Object principal) {
-		if (principal instanceof Jwt && ((Jwt) principal).containsClaim("fake")
-				&& ((Jwt) principal).getClaim("fake").equals("1")) {
-				return true;
-			}
-		return false;
+		return 	principal instanceof Jwt 
+				&& Boolean.TRUE.equals(((Jwt) principal).containsClaim("fake"))
+				&& ((Jwt) principal).getClaim("fake").equals("1");
 	}
 
 
