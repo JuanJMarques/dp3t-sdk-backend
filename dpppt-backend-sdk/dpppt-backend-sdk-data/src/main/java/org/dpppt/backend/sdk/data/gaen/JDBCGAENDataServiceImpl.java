@@ -105,7 +105,6 @@ public class JDBCGAENDataServiceImpl implements GAENDataService {
 		params.addValue("rollingPeriodStartNumberStart", keyDate.get10MinutesSince1970());
 		params.addValue("rollingPeriodStartNumberEnd", keyDate.plusDays(1).get10MinutesSince1970());
 		params.addValue("publishedUntil", publishedUntil.getDate());
-		params.addValue("maxAllowedStartNumber", now.roundToPreviousBucket(releaseBucketDuration).minusHours(2).get10MinutesSince1970());
 
 		String sql = "select pk_exposed_id, key, rolling_start_number, rolling_period, transmission_risk_level from t_gaen_exposed where"
 				+ " rolling_start_number >= :rollingPeriodStartNumberStart"

@@ -76,8 +76,8 @@ public class UTCInstant {
 		return new UTCInstant(amount, unit);
 	}
 
-	public static UTCInstant ofEpochMillis(long epochMillis) {
-		return new UTCInstant(epochMillis);
+	public static UTCInstant ofEpochMillis(Long epochMillis) {
+		return new UTCInstant(epochMillis == null? 0 : epochMillis);
 	}
 
 	public static UTCInstant parseDate(String dateString) {

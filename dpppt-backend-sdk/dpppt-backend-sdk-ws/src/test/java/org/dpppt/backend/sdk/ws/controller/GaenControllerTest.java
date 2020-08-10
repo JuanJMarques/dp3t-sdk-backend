@@ -120,10 +120,17 @@ public class GaenControllerTest extends BaseControllerTest {
 		gaenKey2.setRollingPeriod(0);
 		gaenKey2.setFake(0);
 		gaenKey2.setTransmissionRiskLevel(0);
+		var gaenKey3 = new GaenKey();
+		gaenKey3.setRollingStartNumber((int) now.atStartOfDay().get10MinutesSince1970());
+		gaenKey3.setKeyData(Base64.getEncoder().encodeToString("testKey32Bytes02".getBytes("UTF-8")));
+		gaenKey3.setRollingPeriod(144);
+		gaenKey3.setFake(0);
+		gaenKey3.setTransmissionRiskLevel(0);
 		List<GaenKey> exposedKeys = new ArrayList<>();
 		exposedKeys.add(gaenKey1);
 		exposedKeys.add(gaenKey2);
-		for (int i = 0; i < n-2; i++) {
+		exposedKeys.add(gaenKey3);
+		for (int i = 0; i < n-3; i++) {
 			var tmpKey = new GaenKey();
 			tmpKey.setRollingStartNumber((int)now.atStartOfDay().get10MinutesSince1970());
 			tmpKey.setKeyData(Base64.getEncoder().encodeToString("testKey32Bytes--".getBytes("UTF-8")));
@@ -168,7 +175,7 @@ public class GaenControllerTest extends BaseControllerTest {
 
 		//third key should be released tomorrow
 		var tomorrow2AM = now.atStartOfDay().plusDays(1).plusHours(2).plusSeconds(1);
-		result = gaenDataService.getSortedExposedForKeyDate(now.atStartOfDay(),null, tomorrow2AM, tomorrow2AM);
+		result = gaenDataService.getSortedExposedForKeyDate(now.atStartOfDay(),null, tomorrow2AM,tomorrow2AM);
 		assertEquals(1, result.size());
 	}
 

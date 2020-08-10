@@ -64,7 +64,7 @@ public class FakeKeyService {
 			return keys;
 		}
 		var today = UTCInstant.today();
-		var keyLocalDate = UTCInstant.ofEpochMillis(keyDate).atStartOfDay();
+		var keyLocalDate = keyDate.atStartOfDay();
 		if (today.hasSameDateAs(keyLocalDate)) {
 			return keys;
 		}
