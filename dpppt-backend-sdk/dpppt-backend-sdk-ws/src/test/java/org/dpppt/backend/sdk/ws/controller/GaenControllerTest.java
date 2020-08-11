@@ -122,7 +122,7 @@ public class GaenControllerTest extends BaseControllerTest {
 		gaenKey2.setTransmissionRiskLevel(0);
 		var gaenKey3 = new GaenKey();
 		gaenKey3.setRollingStartNumber((int) now.atStartOfDay().get10MinutesSince1970());
-		gaenKey3.setKeyData(Base64.getEncoder().encodeToString("testKey32Bytes02".getBytes("UTF-8")));
+		gaenKey3.setKeyData(Base64.getEncoder().encodeToString("testKey32Bytes03".getBytes("UTF-8")));
 		gaenKey3.setRollingPeriod(144);
 		gaenKey3.setFake(0);
 		gaenKey3.setTransmissionRiskLevel(0);
@@ -175,8 +175,14 @@ public class GaenControllerTest extends BaseControllerTest {
 
 		//third key should be released tomorrow
 		var tomorrow2AM = now.atStartOfDay().plusDays(1).plusHours(2).plusSeconds(1);
-		result = gaenDataService.getSortedExposedForKeyDate(now.atStartOfDay(),null, tomorrow2AM,tomorrow2AM);
+		result = gaenDataService.getSortedExposedForKeyDate(now.atStartOfDay(),null, tomorrow2AM.roundToNextBucket(releaseBucketDuration),tomorrow2AM);
 		assertEquals(1, result.size());
+
+		result = gaenDataService.getSortedExposedForKeyDate(now.atStartOfDay(),null, now.roundToNextBucket(releaseBucketDuration), now);
+		assertEquals(0, result.size());
+
+		result = gaenDataService.getSortedExposedForKeyDate(now.atStartOfDay(),null, now.atStartOfDay().plusDays(1), now);
+		assertEquals(0, result.size());
 	}
 
 	@Test
@@ -203,7 +209,7 @@ public class GaenControllerTest extends BaseControllerTest {
 		for (int i = 0; i < 12; i++) {
 			var tmpKey = new GaenKey();
 			tmpKey.setRollingStartNumber((int)midnight.plusDays(10).get10MinutesSince1970());
-			tmpKey.setKeyData(Base64.getEncoder().encodeToString("testKey32Bytes--".getBytes("UTF-8")));
+			tmpKey.setKeyData(Base64.getEncoder().encodeToString("testKey32Bytes03".getBytes("UTF-8")));
 			tmpKey.setRollingPeriod(144);
 			tmpKey.setFake(0);
 			tmpKey.setTransmissionRiskLevel(0);
