@@ -38,8 +38,8 @@ import org.dpppt.backend.sdk.ws.filter.ResponseWrapperFilter;
 import org.dpppt.backend.sdk.ws.insertmanager.InsertManager;
 import org.dpppt.backend.sdk.ws.insertmanager.insertionfilters.FakeKeysFilter;
 import org.dpppt.backend.sdk.ws.insertmanager.insertionfilters.IOSLegacyProblemRPLT144;
+import org.dpppt.backend.sdk.ws.insertmanager.insertionfilters.InvalidRollingPeriodFilter;
 import org.dpppt.backend.sdk.ws.insertmanager.insertionfilters.KeysNotMatchingJWTFilter;
-import org.dpppt.backend.sdk.ws.insertmanager.insertionfilters.NegativeRollingPeriodFilter;
 import org.dpppt.backend.sdk.ws.insertmanager.insertionfilters.NoBase64Filter;
 import org.dpppt.backend.sdk.ws.insertmanager.insertionfilters.OldAndroid0RPFilter;
 import org.dpppt.backend.sdk.ws.insertmanager.insertionfilters.RollingStartNumberAfterDayAfterTomorrow;
@@ -205,7 +205,7 @@ public abstract class WSBaseConfig implements SchedulingConfigurer, WebMvcConfig
 		manager.addFilter(new RollingStartNumberAfterDayAfterTomorrow());
 		manager.addFilter(new RollingStartNumberBeforeRetentionDay(gaenValidationUtils()));
 		manager.addFilter(new FakeKeysFilter());
-		manager.addFilter(new NegativeRollingPeriodFilter());
+		manager.addFilter(new InvalidRollingPeriodFilter());
 		return manager;
 	}
 	@ConditionalOnProperty(
