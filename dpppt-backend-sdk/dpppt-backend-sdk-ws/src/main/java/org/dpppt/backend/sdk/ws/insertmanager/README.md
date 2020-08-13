@@ -64,5 +64,5 @@ public InsertManager insertManager() {
     > Any key which was valid earlier than `RetentionPeriod` is considered to be outdated and not saved in the database. The key would be removed during the next database clean anyways.
 - `FakeKeysFilter`
     > Any key which has the `fake` flag is not inserted.
-- `NegativeRollingPeriodFilter`: 
-    > The `RollingPeriod` represents the 10 minutes interval of the key's validity. Negative numbers are not possible, hence any key having a negative rolling period is considered to be _maliciously_ uploaded.
+- `InvalidRollingPeriodFilter`: 
+    > The `RollingPeriod` represents the 10 minutes interval of the key's validity. Negative numbers are not possible, hence any key having a negative rolling period is considered to be _maliciously_ uploaded. Further, according to [Apple/Googles documentation](https://github.com/google/exposure-notifications-server/blob/main/docs/server_functional_requirements.md) values larger than 144 are invalid as well
