@@ -8,11 +8,11 @@ import org.dpppt.backend.sdk.semver.Version;
 import org.dpppt.backend.sdk.utils.UTCInstant;
 import org.dpppt.backend.sdk.ws.insertmanager.OSType;
 
-public class NegativeRollingPeriodFilter implements InsertionFilter {
+public class InvalidRollingPeriodFilter implements InsertionFilter {
 
     @Override
     public List<GaenKey> filter(UTCInstant now, List<GaenKey> content, OSType osType, Version osVersion, Version appVersion, Object principal) {
-        return content.stream().filter(key -> key.getRollingPeriod() >= 0).collect(Collectors.toList());
+        return content.stream().filter(key -> key.getRollingPeriod() >= 0 ||  key.getRollingPeriod() > 144).collect(Collectors.toList());
     }
     
 }
